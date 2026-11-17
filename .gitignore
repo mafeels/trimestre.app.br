@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.env
+venv/
+.venv/
+
+media/recordings/
+*.mp3
+*.wav
+*.ogg
+*.m4a

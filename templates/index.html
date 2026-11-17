@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>trimestre.app.br</title>
+  
+  <!-- Fontes de precisão tipográfica estilo recibo/cupom fiscal -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      /* Papel térmico / recibo: off-white suave */
+      --paper-bg: #f8f6f0;
+      --paper-surface: #f1ede3;
+      --paper-card: #fdfcf9;
+      
+      /* Tintas de cupom fiscal */
+      --ink-900: #161718; /* Cinza muito escuro que parece preto */
+      --ink-700: #333538;
+      --ink-500: #686b70;
+      --ink-300: #b0ada5;
+      --border-dash: #d6d0c2;
+      
+      /* Verde clássico institucional / carimbo fiscal */
+      --brand-green: #1b5e3a;
+      --brand-green-hover: #14492c;
+      --brand-green-bg: #eaf3ed;
+      --brand-green-border: #a4cca5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--paper-bg);
+      color: var(--ink-900);
+      font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.45;
+      padding-bottom: 120px; /* pb generoso para não cobrir nenhum conteúdo pelo player expandido */
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .receipt-container {
+      width: 100%;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px 20px 48px;
+    }
+
+    /* Linhas pontilhadas e picotes inspirados em cupom fiscal */
+    .receipt-rule-dashed {
+      border-top: 1px dashed var(--border-dash);
+      margin: 16px 0;
+    }
+
+    .receipt-rule-double {
+      border-top: 3px double var(--ink-900);
+      margin: 18px 0;
+    }
+
+    /* HEADER */
+    header {
+      padding: 12px 0 6px;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      text-decoration: none;
+      color: var(--ink-900);
+    }
+
+    .brand-title span.green-suffix {
+      color: var(--brand-green);
+    }
+
+    .header-meta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--ink-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* BOTÕES SIMPLES TIPO RECIBO */
+    .btn-receipt {
+      background: var(--paper-card);
+      border: 1px solid var(--border-dash);
+      color: var(--ink-900);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 5px 12px;
+      border-radius: 2px;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-weight: 600;
+      transition: background 0.1s ease, border-color 0.1s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-receipt:hover {
+      background: var(--paper-surface);
+      border-color: var(--ink-500);
+    }
+
+    .btn-receipt:active {
+      background: var(--border-dash);
+    }
+
+    /* BARRA DE CONTROLE / FILTROS NO NÍVEL 1 */
+    .controls-row {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 6px;
+    }
+
+    @media (min-width: 640px) {
+      .controls-row {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .search-wrapper {
+      position: relative;
+      flex: 1;
+      max-width: 480px;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--paper-card);
+      border: 1px solid var(--border-dash);
+      border-radius: 2px;
+      padding: 8px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--ink-900);
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: var(--brand-green);
+    }
+
+    .search-input::placeholder {
+      color: var(--ink-500);
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .filter-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      background: transparent;
+      border: 1px solid var(--border-dash);
+      padding: 5px 10px;
+      border-radius: 2px;
+      cursor: pointer;
+      color: var(--ink-700);
+      font-weight: 600;
+    }
+
+    .filter-tag.active {
+      background: var(--ink-900);
+      color: var(--paper-card);
+      border-color: var(--ink-900);
+    }
+
+    /* ========================================= */
+    /* NÍVEL 1: GRID DE CARTÕES MINI CUPOM FISCAL */
+    /* ========================================= */
+    .companies-grid {
+      display: grid;
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    @media (min-width: 580px) {
+      .companies-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (min-width: 860px) {
+      .companies-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    .company-card {
+      background: var(--paper-card);
+      border: 1px solid var(--border-dash);
+      border-radius: 2px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      aspect-ratio: 1 / 1;
+      width: 100%;
+      box-sizing: border-box;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+      position: relative;
+    }
+
+    .company-card:hover {
+      border-color: var(--ink-900);
+      background-color: #faf7ee;
+      transform: translateY(-2px);
+    }
+
+    /* Regras universais para imagens e wrappers de logotipo */
+    .company-logo-img {
+      max-width: 100% !important;
+      max-height: 100% !important;
+      width: auto !important;
+      height: auto !important;
+      object-fit: contain !important;
+      display: block;
+    }
+
+    .logo-wrapper {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      overflow: hidden !important;
+    }
+
+    /* Área Superior: Logo ocupando aprox. 1/4 da área do cartão (w-1/2 h-1/2) e sem bordas */
+    .company-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      height: 48%;
+      width: 100%;
+    }
+
+    .company-logo-area {
+      width: 50%;
+      height: 100%;
+      max-width: 50%;
+      max-height: 100%;
+      border: none !important;
+      background: transparent !important;
+      padding: 0 !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .company-logo-area .logo-wrapper {
+      width: 100% !important;
+      height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+
+    .company-logo-area .company-logo-img {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
+      object-fit: contain !important;
+      object-position: center center !important;
+      border: none;
+      background: transparent;
+      display: block;
+    }
+
+    .company-logo-area .monogram-fallback {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--ink-900);
+      letter-spacing: -1px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    .company-exchange-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--ink-500);
+      background: var(--paper-surface);
+      border: 1px solid var(--border-dash);
+      padding: 2px 6px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* Área do Meio: Ticker e Nome */
+    .company-card-body {
+      margin-top: auto;
+      margin-bottom: 8px;
+    }
+
+    .company-ticker {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--ink-900);
+      line-height: 1.2;
+    }
+
+    .company-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink-700);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+      line-height: 1.2;
+    }
+
+    /* Linha tracejada interna do cupom */
+    .card-divider {
+      border-top: 1px dashed var(--border-dash);
+      margin: 8px 0;
+    }
+
+    .company-card-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--ink-500);
+      margin-bottom: 2px;
+    }
+
+    .company-quarters-list {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--ink-900);
+      font-weight: 600;
+      max-width: 60%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: right;
+    }
+
+    .company-card-footer {
+      padding-top: 6px;
+      border-top: 1px dashed var(--border-dash);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--ink-500);
+      text-transform: uppercase;
+    }
+
+    .view-arrow {
+      font-weight: 700;
+      color: var(--ink-900);
+    }
+
+    /* ========================================= */
+    /* NÍVEL 2: VISÃO DA EMPRESA (FAIXAS DO ÁLBUM) */
+    /* ========================================= */
+    .company-view {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .company-view-nav {
+      margin-bottom: 16px;
+    }
+
+    .company-view-hero {
+      background: var(--paper-card);
+      border: 1px solid var(--border-dash);
+      padding: 20px 18px;
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .company-hero-logo {
+      width: 56px;
+      height: 56px;
+      max-width: 56px;
+      max-height: 56px;
+      border: 1px solid var(--border-dash);
+      background: var(--paper-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ink-900);
+      border-radius: 2px;
+      flex-shrink: 0;
+      overflow: hidden;
+      padding: 4px;
+      box-sizing: border-box;
+    }
+
+    .company-hero-logo .company-logo-img {
+      max-width: 100% !important;
+      max-height: 100% !important;
+      object-fit: contain !important;
+      object-position: center !important;
+    }
+
+    .company-hero-details {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .company-hero-ticker {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink-900);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .company-hero-name {
+      font-size: 14px;
+      color: var(--ink-700);
+      margin-top: 2px;
+    }
+
+    .company-hero-stats {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--ink-500);
+      text-align: right;
+    }
+
+    /* TABELA DE WEBCASTS / CUPOM FISCAL */
+    .webcasts-table-header {
+      display: grid;
+      grid-template-columns: 80px 1fr 100px 60px;
+      padding: 8px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 16px;
+    }
+
+    .webcasts-list {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border-dash);
+      background: var(--paper-card);
+      border-radius: 2px;
+    }
+
+    .webcast-row {
+      display: grid;
+      grid-template-columns: 80px 1fr 100px 60px;
+      align-items: center;
+      padding: 12px 12px;
+      border-bottom: 1px dashed var(--border-dash);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      transition: background 0.1s ease;
+    }
+
+    .webcast-row:last-child {
+      border-bottom: none;
+    }
+
+    .webcast-row:hover {
+      background: #faf6ee;
+    }
+
+    .webcast-row.is-active {
+      background: var(--brand-green-bg);
+      border-left: 3px solid var(--brand-green);
+    }
+
+    .webcast-quarter {
+      font-weight: 700;
+      color: var(--ink-900);
+    }
+
+    .webcast-title-col {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 13px;
+      color: var(--ink-700);
+      padding-right: 12px;
+    }
+
+    .webcast-date {
+      font-size: 11px;
+      color: var(--ink-500);
+    }
+
+    .webcast-action {
+      text-align: right;
+    }
+
+    /* BOTÃO COM ÍCONE DE PLAY / PAUSE (SEM TEXTO) */
+    .btn-icon-play {
+      width: 34px;
+      height: 34px;
+      background: transparent;
+      border: 1px solid var(--ink-900);
+      color: var(--ink-900);
+      border-radius: 2px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s ease;
+    }
+
+    .btn-icon-play:hover {
+      background: var(--ink-900);
+      color: var(--paper-card);
+    }
+
+    .webcast-row.is-active .btn-icon-play {
+      background: var(--brand-green);
+      border-color: var(--brand-green);
+      color: #ffffff;
+    }
+
+    .btn-icon-play svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+
+    /* Responsive webcast row */
+    @media (max-width: 600px) {
+      .webcasts-table-header {
+        display: none;
+      }
+      .webcast-row {
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+        gap: 6px 10px;
+        padding: 12px 10px;
+      }
+      .webcast-quarter {
+        grid-column: 1 / 2;
+      }
+      .webcast-action {
+        grid-column: 2 / 3;
+        grid-row: 1 / 3;
+        align-self: center;
+      }
+      .webcast-title-col {
+        grid-column: 1 / 2;
+        font-size: 12px;
+      }
+      .webcast-date {
+        grid-column: 1 / 2;
+        font-size: 10px;
+      }
+    }
+
+    /* EMPTY STATES */
+    .empty-state {
+      padding: 36px 16px;
+      text-align: center;
+      background: var(--paper-card);
+      border: 1px dashed var(--border-dash);
+      border-radius: 2px;
+      margin-top: 18px;
+    }
+
+    .empty-state h3 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      color: var(--ink-900);
+    }
+
+    .empty-state p {
+      font-size: 12px;
+      color: var(--ink-500);
+      margin-bottom: 12px;
+    }
+
+    .format-spec {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      background: var(--paper-surface);
+      border: 1px solid var(--border-dash);
+      padding: 6px 12px;
+      color: var(--brand-green);
+      font-weight: 600;
+    }
+
+    /* DISCLAIMER LEGAL */
+    .receipt-footer-disclaimer {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--ink-500);
+      text-align: center;
+      line-height: 1.5;
+      padding: 20px 8px;
+      text-transform: uppercase;
+    }
+
+    /* ========================================= */
+    /* PLAYER FIXO INFERIOR (MAIOR, MAIS CONFORTÁVEL) */
+    /* ========================================= */
+    .bottom-player-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--paper-card);
+      border-top: 2px solid var(--ink-900);
+      padding: 14px 20px;
+      min-height: 86px;
+      z-index: 100;
+      box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.05);
+    }
+
+    .player-inner {
+      max-width: 980px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    @media (min-width: 768px) {
+      .player-inner {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+    }
+
+    .player-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 210px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .player-mini-logo {
+      width: 38px;
+      height: 38px;
+      max-width: 38px;
+      max-height: 38px;
+      border: 1px solid var(--border-dash);
+      background: var(--paper-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-900);
+      border-radius: 2px;
+      flex-shrink: 0;
+      overflow: hidden;
+      padding: 3px;
+      box-sizing: border-box;
+    }
+
+    .player-mini-logo .company-logo-img {
+      max-width: 100% !important;
+      max-height: 100% !important;
+      object-fit: contain !important;
+      object-position: center !important;
+    }
+
+    .player-text-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .player-title-line {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .player-ticker {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink-900);
+    }
+
+    .player-quarter {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      background: var(--paper-surface);
+      border: 1px solid var(--border-dash);
+      padding: 1px 5px;
+      border-radius: 2px;
+      color: var(--ink-700);
+      font-weight: 600;
+    }
+
+    .player-company {
+      font-size: 12px;
+      color: var(--ink-500);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
+    }
+
+    /* CONTROLES CENTRAIS DO PLAYER */
+    .player-center-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .player-buttons-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .btn-player-skip {
+      background: transparent;
+      border: 1px solid var(--ink-900);
+      color: var(--ink-900);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 10px;
+      border-radius: 2px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s ease;
+    }
+
+    .btn-player-skip:hover {
+      background: var(--ink-900);
+      color: var(--paper-card);
+    }
+
+    .btn-player-main-play {
+      width: 44px;
+      height: 44px;
+      background: var(--brand-green);
+      border: 1px solid var(--brand-green);
+      color: #ffffff;
+      border-radius: 2px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s ease;
+    }
+
+    .btn-player-main-play:hover {
+      background: var(--brand-green-hover);
+      border-color: var(--brand-green-hover);
+    }
+
+    .btn-player-main-play svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    /* TIMELINE / PROGRESSO CONFORTÁVEL */
+    .player-timeline-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .timeline-range {
+      flex: 1;
+      height: 6px; /* Altura maior para clique preciso */
+      -webkit-appearance: none;
+      background: var(--border-dash);
+      outline: none;
+      cursor: pointer;
+      border-radius: 1px;
+    }
+
+    .timeline-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+      background: var(--ink-900);
+      cursor: pointer;
+      border: 1px solid var(--paper-card);
+    }
+
+    .timeline-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--ink-500);
+      width: 44px;
+    }
+
+    /* OPÇÕES À DIREITA: VELOCIDADE */
+    .player-right-options {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      min-width: 80px;
+    }
+
+    .speed-select {
+      background: var(--paper-surface);
+      border: 1px solid var(--border-dash);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink-900);
+      padding: 6px 8px;
+      border-radius: 2px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .speed-select:focus {
+      border-color: var(--brand-green);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="receipt-container">
+    
+    <!-- HEADER -->
+    <header>
+      <div class="header-top">
+        <div>
+          <a href="#" id="brandHomeLink" class="brand-title">trimestre<span class="green-suffix">.app.br</span></a>
+          <div class="header-meta" id="headerTagline" data-i18n="tagline">
+            REGISTRO DE CONFERÊNCIAS DE RESULTADOS // RI
+          </div>
+          <div class="header-meta" id="headerDisclaimer" data-i18n="headerDisclaimer">
+            APENAS PARA FINS INFORMATIVOS // NÃO CONSTITUI RECOMENDAÇÃO DE INVESTIMENTO
+          </div>
+        </div>
+
+        <div class="header-controls">
+          <button id="refreshBtn" class="btn-receipt" title="Recarregar catálogo">
+            [<span id="refreshLabel" data-i18n="refresh">ATUALIZAR</span>]
+          </button>
+          <button id="langToggleBtn" class="btn-receipt" title="Alternar idioma">
+            <span id="langFlag">🇧🇷</span> <span id="langLabel">PT</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- LINHA DUPLA FISCAL -->
+    <div class="receipt-rule-double"></div>
+
+    <!-- ========================================= -->
+    <!-- VIEW 1: GRID DE EMPRESAS (ÁLBUNS) -->
+    <!-- ========================================= -->
+    <section id="companiesView">
+      
+      <!-- CONTROLES E BUSCA -->
+      <div class="controls-row">
+        <div class="search-wrapper">
+          <input 
+            type="text" 
+            id="searchInput" 
+            class="search-input"
+            data-i18n-placeholder="searchPlaceholder"
+            placeholder="BUSCAR EMPRESA OU TICKER (EX: WEGE3, NVDA)..."
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="filter-group">
+          <button class="filter-tag active" data-exchange="ALL">
+            <span data-i18n="all">TODAS</span>
+          </button>
+          <button class="filter-tag" data-exchange="B3">B3</button>
+          <button class="filter-tag" data-exchange="NASDAQ">NASDAQ</button>
+        </div>
+      </div>
+
+      <!-- LINHA TRACEJADA -->
+      <div class="receipt-rule-dashed"></div>
+
+      <!-- GRID DE CARTÕES (MINI CUPONS FISCAIS) -->
+      <div id="companiesGrid" class="companies-grid"></div>
+
+      <!-- EMPTY STATE: NENHUM ARQUIVO -->
+      <div id="emptyCatalogState" class="empty-state hidden">
+        <h3 data-i18n="emptyTitle">NENHUM ARQUIVO ENCONTRADO</h3>
+        <p data-i18n="emptyDesc">
+          Deposite os arquivos .mp3 ou .m4a no diretório ./media/audios/
+        </p>
+        <div class="format-spec">
+          TICKER_TRIMESTRE_AAAA-MM-DD.mp3
+        </div>
+        <p style="margin-top: 10px; font-size: 11px;">
+          Exemplos: WEGE3_3T26_2026-10-28.mp3 &bull; NVDA_3Q26_2026-11-19.m4a
+        </p>
+      </div>
+
+      <!-- EMPTY STATE: NENHUM RESULTADO NA BUSCA -->
+      <div id="noCompaniesFoundState" class="empty-state hidden">
+        <h3 data-i18n="noResults">NENHUMA EMPRESA ENCONTRADA</h3>
+      </div>
+
+    </section>
+
+    <!-- ========================================= -->
+    <!-- VIEW 2: DETALHES DA EMPRESA (FAIXAS/WEBCASTS) -->
+    <!-- ========================================= -->
+    <section id="companyDetailView" class="company-view hidden">
+      
+      <!-- BOTÃO VOLTAR -->
+      <div class="company-view-nav">
+        <button id="backToGridBtn" class="btn-receipt">
+          <span data-i18n="backBtn">[← VOLTAR AO CATÁLOGO]</span>
+        </button>
+      </div>
+
+      <!-- HERO DA EMPRESA -->
+      <div class="company-view-hero">
+        <div id="heroLogoBox" class="company-hero-logo">
+          <!-- Monograma ou Imagem -->
+        </div>
+        <div class="company-hero-details">
+          <div class="company-hero-ticker">
+            <span id="heroTicker">--</span>
+            <span id="heroExchange" class="company-exchange-tag">--</span>
+          </div>
+          <div id="heroCompanyName" class="company-hero-name">--</div>
+        </div>
+        <div class="company-hero-stats">
+          <div id="heroAudioCount" style="font-weight: 700; color: var(--ink-900);">--</div>
+          <div data-i18n="availableCalls">CONFERÊNCIAS DISPONÍVEIS</div>
+        </div>
+      </div>
+
+      <!-- CABEÇALHO DA TABELA DE WEBCASTS -->
+      <div class="webcasts-table-header">
+        <span data-i18n="quarterHeader">TRIMESTRE</span>
+        <span data-i18n="eventHeader">EVENTO / CONFERÊNCIA</span>
+        <span data-i18n="dateHeader">DATA</span>
+        <span style="text-align: right;" data-i18n="audioHeader">ÁUDIO</span>
+      </div>
+
+      <!-- LISTA DE WEBCASTS -->
+      <div id="webcastsList" class="webcasts-list"></div>
+
+    </section>
+
+    <!-- LINHA DE FECHAMENTO FISCAL -->
+    <div class="receipt-rule-dashed" style="margin-top: 32px;"></div>
+
+    <!-- DISCLAIMER LEGAL MINIMALISTA -->
+    <div class="receipt-footer-disclaimer" data-i18n="disclaimer">
+      FERRAMENTA ESTRITAMENTE INFORMATIVA DE ORGANIZAÇÃO DE EVENTOS PÚBLICOS DE RELAÇÕES COM INVESTIDORES. NÃO CONSTITUI RECOMENDAÇÃO DE INVESTIMENTO.
+    </div>
+
+  </div>
+
+  <!-- ========================================= -->
+  <!-- PLAYER FIXO INFERIOR (MAIOR E COM ÍCONES) -->
+  <!-- ========================================= -->
+  <div class="bottom-player-bar">
+    <div class="player-inner">
+      
+      <!-- Info do Áudio Atual -->
+      <div class="player-meta">
+        <div id="playerMiniLogo" class="player-mini-logo">RI</div>
+        <div class="player-text-info">
+          <div class="player-title-line">
+            <span id="playerTicker" class="player-ticker">--</span>
+            <span id="playerQuarter" class="player-quarter">--</span>
+          </div>
+          <div id="playerCompany" class="player-company" data-i18n="readyToPlay">SELECIONE UM ÁUDIO</div>
+        </div>
+      </div>
+
+      <!-- Controles Centrais -->
+      <div class="player-center-controls">
+        
+        <div class="player-buttons-row">
+          <!-- Retroceder 15s -->
+          <button id="skipBackwardBtn" class="btn-player-skip" title="-15 segundos" aria-label="-15s">
+            -15s
+          </button>
+
+          <!-- Play / Pause Principal (Ícone) -->
+          <button id="mainPlayPauseBtn" class="btn-player-main-play" title="Tocar / Pausar" aria-label="Tocar ou pausar áudio">
+            <!-- Play SVG -->
+            <svg id="mainPlayIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <!-- Pause SVG -->
+            <svg id="mainPauseIcon" class="hidden" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          </button>
+
+          <!-- Avançar 15s -->
+          <button id="skipForwardBtn" class="btn-player-skip" title="+15 segundos" aria-label="+15s">
+            +15s
+          </button>
+        </div>
+
+        <!-- Barra de Progresso / Linha do Tempo -->
+        <div class="player-timeline-row">
+          <span id="currentTimeLabel" class="timeline-time" style="text-align: right;">0:00</span>
+          <input 
+            type="range" 
+            id="timelineSlider" 
+            class="timeline-range" 
+            min="0" 
+            max="100" 
+            value="0" 
+            step="0.1" 
+            aria-label="Barra de progresso do áudio"
+          />
+          <span id="durationLabel" class="timeline-time">0:00</span>
+        </div>
+
+      </div>
+
+      <!-- Seletor de Velocidade -->
+      <div class="player-right-options">
+        <select id="playbackSpeedSelect" class="speed-select" title="Velocidade de reprodução">
+          <option value="1.0" selected>1.0x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2.0">2.0x</option>
+        </select>
+      </div>
+
+    </div>
+  </div>
+
+  <audio id="globalAudioPlayer" preload="metadata"></audio>
+
+  <script>
+    // --- DICIONÁRIO DE TRADUÇÕES ---
+    const translations = {
+      pt: {
+        tagline: "REGISTRO DE CONFERÊNCIAS DE RESULTADOS // RI",
+        headerDisclaimer: "APENAS PARA FINS INFORMATIVOS // NÃO CONSTITUI RECOMENDAÇÃO DE INVESTIMENTO",
+        searchPlaceholder: "BUSCAR EMPRESA OU TICKER (EX: WEGE3, NVDA)...",
+        refresh: "ATUALIZAR",
+        all: "TODAS",
+        emptyTitle: "NENHUM ARQUIVO ENCONTRADO",
+        emptyDesc: "Deposite os arquivos .mp3 ou .m4a no diretório ./media/audios/",
+        noResults: "NENHUMA EMPRESA ENCONTRADA",
+        disclaimer: "FERRAMENTA ESTRITAMENTE INFORMATIVA DE ORGANIZAÇÃO DE EVENTOS PÚBLICOS DE RELAÇÕES COM INVESTIDORES. NÃO CONSTITUI RECOMENDAÇÃO DE INVESTIMENTO.",
+        readyToPlay: "SELECIONE UM ÁUDIO",
+        backBtn: "[← VOLTAR AO CATÁLOGO]",
+        availableCalls: "CONFERÊNCIAS DISPONÍVEIS",
+        quarterHeader: "TRIMESTRE",
+        eventHeader: "EVENTO / CONFERÊNCIA",
+        dateHeader: "DATA",
+        audioHeader: "ÁUDIO",
+        itemsCount: (n) => `${n} ${n === 1 ? 'ÁUDIO' : 'ÁUDIOS'}`,
+        earningsCallText: (q) => `Conferência de Resultados do ${q}`,
+        playAria: "Reproduzir áudio",
+        pauseAria: "Pausar áudio",
+        openAlbumAria: "Abrir detalhes da empresa",
+      },
+      en: {
+        tagline: "QUARTERLY EARNINGS CALLS REGISTER // IR",
+        headerDisclaimer: "FOR INFORMATIONAL PURPOSES ONLY // DOES NOT CONSTITUTE INVESTMENT ADVICE",
+        searchPlaceholder: "SEARCH COMPANY OR TICKER (E.G. WEGE3, NVDA)...",
+        refresh: "REFRESH",
+        all: "ALL",
+        emptyTitle: "NO AUDIO FILES FOUND",
+        emptyDesc: "Drop .mp3 or .m4a files into ./media/audios/ directory",
+        noResults: "NO COMPANIES FOUND",
+        disclaimer: "STRICTLY INFORMATIONAL TOOL FOR ORGANIZING PUBLIC INVESTOR RELATIONS EVENTS. DOES NOT CONSTITUTE INVESTMENT ADVICE.",
+        readyToPlay: "SELECT AN AUDIO",
+        backBtn: "[← BACK TO CATALOG]",
+        availableCalls: "AVAILABLE CALLS",
+        quarterHeader: "QUARTER",
+        eventHeader: "EVENT / CALL",
+        dateHeader: "DATE",
+        audioHeader: "AUDIO",
+        itemsCount: (n) => `${n} ${n === 1 ? 'AUDIO' : 'AUDIOS'}`,
+        earningsCallText: (q) => `${q} Earnings Call Presentation`,
+        playAria: "Play audio",
+        pauseAria: "Pause audio",
+        openAlbumAria: "View company calls",
+      }
+    };
+
+    let currentLang = 'pt';
+    let rawCatalog = [];
+    let groupedCompanies = [];
+    let activeExchange = 'ALL';
+    let searchQuery = '';
+    let selectedTicker = null; // null = Visão Nível 1 (Grid); string = Visão Nível 2 (Empresa)
+    let currentTrack = null;
+    let isUserSeeking = false;
+
+    // DOM Elements
+    const audioEl = document.getElementById('globalAudioPlayer');
+    const mainPlayPauseBtn = document.getElementById('mainPlayPauseBtn');
+    const mainPlayIcon = document.getElementById('mainPlayIcon');
+    const mainPauseIcon = document.getElementById('mainPauseIcon');
+    const timelineSlider = document.getElementById('timelineSlider');
+    const currentTimeLabel = document.getElementById('currentTimeLabel');
+    const durationLabel = document.getElementById('durationLabel');
+    const skipBackwardBtn = document.getElementById('skipBackwardBtn');
+    const skipForwardBtn = document.getElementById('skipForwardBtn');
+    const playbackSpeedSelect = document.getElementById('playbackSpeedSelect');
+
+    const playerMiniLogo = document.getElementById('playerMiniLogo');
+    const playerTicker = document.getElementById('playerTicker');
+    const playerQuarter = document.getElementById('playerQuarter');
+    const playerCompany = document.getElementById('playerCompany');
+
+    const brandHomeLink = document.getElementById('brandHomeLink');
+    const searchInput = document.getElementById('searchInput');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const langToggleBtn = document.getElementById('langToggleBtn');
+    const langFlag = document.getElementById('langFlag');
+    const langLabel = document.getElementById('langLabel');
+
+    // Views
+    const companiesView = document.getElementById('companiesView');
+    const companyDetailView = document.getElementById('companyDetailView');
+    const companiesGrid = document.getElementById('companiesGrid');
+    const emptyCatalogState = document.getElementById('emptyCatalogState');
+    const noCompaniesFoundState = document.getElementById('noCompaniesFoundState');
+
+    // Detail view elements
+    const backToGridBtn = document.getElementById('backToGridBtn');
+    const heroLogoBox = document.getElementById('heroLogoBox');
+    const heroTicker = document.getElementById('heroTicker');
+    const heroExchange = document.getElementById('heroExchange');
+    const heroCompanyName = document.getElementById('heroCompanyName');
+    const heroAudioCount = document.getElementById('heroAudioCount');
+    const webcastsList = document.getElementById('webcastsList');
+
+    function formatTime(seconds) {
+      if (isNaN(seconds) || seconds < 0) return "0:00";
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = Math.floor(seconds % 60);
+      const sStr = s < 10 ? `0${s}` : `${s}`;
+      if (h > 0) {
+        const mStr = m < 10 ? `0${m}` : `${m}`;
+        return `${h}:${mStr}:${sStr}`;
+      }
+      return `${m}:${sStr}`;
+    }
+
+    // Helper: monograma para fallback de logo
+    function getMonogram(ticker) {
+      if (!ticker) return "RI";
+      return ticker.replace(/[0-9]/g, '').substring(0, 3) || ticker.substring(0, 3);
+    }
+
+    // Helper: Gera HTML do logo com fallback para monograma
+    function renderLogoMarkup(ticker, extraClass = "") {
+      const monogram = getMonogram(ticker);
+      return `
+        <div class="logo-wrapper ${extraClass}">
+          <img 
+            src="/media/logos/${ticker}.svg" 
+            alt="${ticker}" 
+            class="company-logo-img" 
+            onerror="this.onerror=null; this.src='/media/logos/${ticker}.png'; this.onerror=() => { this.style.display='none'; this.nextElementSibling.style.display='flex'; }"
+          />
+          <div class="monogram-fallback" style="display: none; width:100%; height:100%; align-items:center; justify-content:center; font-weight:700;">
+            ${monogram}
+          </div>
+        </div>
+      `;
+    }
+
+    // --- AGRUPAR ÁUDIOS POR EMPRESA ---
+    function groupCatalogByCompany(items) {
+      const map = new Map();
+
+      items.forEach(item => {
+        if (!map.has(item.ticker)) {
+          map.set(item.ticker, {
+            ticker: item.ticker,
+            company: item.company,
+            exchange: item.exchange,
+            audios: []
+          });
+        }
+        map.get(item.ticker).audios.push(item);
+      });
+
+      // Ordenar audios de cada empresa do mais recente para o mais antigo
+      const groups = Array.from(map.values()).map(grp => {
+        grp.audios.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+        return grp;
+      });
+
+      // Ordenar empresas por ticker alfabeticamente
+      groups.sort((a, b) => a.ticker.localeCompare(b.ticker));
+      return groups;
+    }
+
+    // --- IDIOMA ---
+    function setLanguage(lang) {
+      currentLang = lang;
+      const dict = translations[lang];
+
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) el.textContent = dict[key];
+      });
+
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (dict[key]) el.placeholder = dict[key];
+      });
+
+      if (lang === 'pt') {
+        langFlag.textContent = '🇧🇷';
+        langLabel.textContent = 'PT';
+        document.documentElement.lang = 'pt-BR';
+      } else {
+        langFlag.textContent = '🇺🇸';
+        langLabel.textContent = 'EN';
+        document.documentElement.lang = 'en';
+      }
+
+      renderUI();
+    }
+
+    langToggleBtn.addEventListener('click', () => {
+      setLanguage(currentLang === 'pt' ? 'en' : 'pt');
+    });
+
+    // --- FETCH CATALOG ---
+    async function loadCatalog() {
+      try {
+        const res = await fetch('/api/audios');
+        if (!res.ok) throw new Error('Falha ao carregar');
+        rawCatalog = await res.json();
+        groupedCompanies = groupCatalogByCompany(rawCatalog);
+        renderUI();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    refreshBtn.addEventListener('click', loadCatalog);
+
+    // Navegação para Home ao clicar no Logo
+    brandHomeLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      selectedTicker = null;
+      renderUI();
+    });
+
+    backToGridBtn.addEventListener('click', () => {
+      selectedTicker = null;
+      renderUI();
+    });
+
+    // Filtros
+    function getFilteredCompanies() {
+      const q = searchQuery.trim().toLowerCase();
+      return groupedCompanies.filter(comp => {
+        if (activeExchange !== 'ALL' && comp.exchange.toUpperCase() !== activeExchange) {
+          return false;
+        }
+        if (q) {
+          const matchTicker = comp.ticker.toLowerCase().includes(q);
+          const matchCompany = comp.company.toLowerCase().includes(q);
+          if (!matchTicker && !matchCompany) return false;
+        }
+        return true;
+      });
+    }
+
+    // --- RENDERIZAÇÃO DA UI ---
+    function renderUI() {
+      if (selectedTicker) {
+        // NÍVEL 2: VISÃO DA EMPRESA
+        companiesView.classList.add('hidden');
+        companyDetailView.classList.remove('hidden');
+        renderCompanyDetailView(selectedTicker);
+      } else {
+        // NÍVEL 1: GRID DE EMPRESAS
+        companyDetailView.classList.add('hidden');
+        companiesView.classList.remove('hidden');
+        renderCompaniesGrid();
+      }
+      updatePlayerInfo();
+    }
+
+    // RENDER: NÍVEL 1 (GRID DE CARTÕES MINI CUPOM FISCAL)
+    function renderCompaniesGrid() {
+      const dict = translations[currentLang];
+
+      if (rawCatalog.length === 0) {
+        emptyCatalogState.classList.remove('hidden');
+        noCompaniesFoundState.classList.add('hidden');
+        companiesGrid.innerHTML = '';
+        return;
+      }
+      emptyCatalogState.classList.add('hidden');
+
+      const filtered = getFilteredCompanies();
+
+      if (filtered.length === 0) {
+        noCompaniesFoundState.classList.remove('hidden');
+        companiesGrid.innerHTML = '';
+        return;
+      }
+      noCompaniesFoundState.classList.add('hidden');
+
+      companiesGrid.innerHTML = filtered.map(comp => {
+        const quartersList = comp.audios.map(a => a.quarter).slice(0, 3).join(' • ');
+        const countText = dict.itemsCount(comp.audios.length);
+
+        return `
+          <div class="company-card" onclick="openCompanyView('${comp.ticker}')" role="button" aria-label="${dict.openAlbumAria}: ${comp.company}">
+            
+            <!-- Topo: Logo sem borda ocupando 1/4 da área do cartão (w-1/2 h-1/2) + Badge Bolsa -->
+            <div class="company-card-top">
+              <div class="company-logo-area">
+                ${renderLogoMarkup(comp.ticker)}
+              </div>
+              <span class="company-exchange-tag">${comp.exchange}</span>
+            </div>
+
+            <!-- Corpo: Ticker e Nome da Empresa -->
+            <div class="company-card-body">
+              <div class="company-ticker">${comp.ticker}</div>
+              <div class="company-name" title="${comp.company}">${comp.company}</div>
+            </div>
+
+            <!-- Divisor Tracejado -->
+            <div class="card-divider"></div>
+
+            <!-- Metadados inferiores do cupom -->
+            <div class="company-card-meta">
+              <span>DISPONÍVEL:</span>
+              <span class="company-quarters-list" title="${quartersList}">${quartersList}</span>
+            </div>
+
+            <div class="company-card-footer">
+              <span>${countText}</span>
+              <span class="view-arrow">[VER →]</span>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.openCompanyView = function(ticker) {
+      selectedTicker = ticker;
+      renderUI();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // RENDER: NÍVEL 2 (DETALHES / FAIXAS DO ÁLBUM)
+    function renderCompanyDetailView(ticker) {
+      const comp = groupedCompanies.find(c => c.ticker === ticker);
+      const dict = translations[currentLang];
+
+      if (!comp) {
+        selectedTicker = null;
+        renderUI();
+        return;
+      }
+
+      // Hero
+      heroLogoBox.innerHTML = renderLogoMarkup(comp.ticker);
+      heroTicker.textContent = comp.ticker;
+      heroExchange.textContent = comp.exchange;
+      heroCompanyName.textContent = comp.company;
+      heroAudioCount.textContent = comp.audios.length;
+
+      // Webcasts List
+      webcastsList.innerHTML = comp.audios.map(audio => {
+        const isCurrent = currentTrack && currentTrack.filename === audio.filename;
+        const isPlaying = isCurrent && !audioEl.paused;
+
+        return `
+          <div class="webcast-row ${isCurrent ? 'is-active' : ''}">
+            <div class="webcast-quarter">${audio.quarter}</div>
+            <div class="webcast-title-col">
+              ${dict.earningsCallText(audio.quarter)}
+            </div>
+            <div class="webcast-date">${audio.date}</div>
+            <div class="webcast-action">
+              <button 
+                onclick="handlePlayItem('${audio.filename}')" 
+                class="btn-icon-play"
+                title="${isPlaying ? dict.pauseAria : dict.playAria}"
+                aria-label="${isPlaying ? dict.pauseAria : dict.playAria}"
+              >
+                ${isPlaying ? `
+                  <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                ` : `
+                  <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                `}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // --- REPRODUÇÃO DE ÁUDIO ---
+    window.handlePlayItem = function(filename) {
+      const item = rawCatalog.find(i => i.filename === filename);
+      if (!item) return;
+
+      if (currentTrack && currentTrack.filename === filename) {
+        if (audioEl.paused) {
+          audioEl.play();
+        } else {
+          audioEl.pause();
+        }
+        return;
+      }
+
+      currentTrack = item;
+      updatePlayerInfo();
+
+      audioEl.src = item.url;
+      audioEl.playbackRate = parseFloat(playbackSpeedSelect.value) || 1.0;
+      audioEl.play().catch(err => console.log('Autoplay bloqueado:', err));
+
+      if (selectedTicker) {
+        renderCompanyDetailView(selectedTicker);
+      }
+    };
+
+    function updatePlayerInfo() {
+      if (!currentTrack) {
+        playerTicker.textContent = "--";
+        playerQuarter.textContent = "--";
+        playerCompany.textContent = translations[currentLang].readyToPlay;
+        playerMiniLogo.innerHTML = "RI";
+        return;
+      }
+
+      playerTicker.textContent = currentTrack.ticker;
+      playerQuarter.textContent = currentTrack.quarter;
+      playerCompany.textContent = `${currentTrack.company} (${currentTrack.exchange})`;
+      playerMiniLogo.innerHTML = renderLogoMarkup(currentTrack.ticker);
+    }
+
+    function updatePlayerButtonState() {
+      const isPaused = audioEl.paused;
+      if (isPaused) {
+        mainPlayIcon.classList.remove('hidden');
+        mainPauseIcon.classList.add('hidden');
+      } else {
+        mainPlayIcon.classList.add('hidden');
+        mainPauseIcon.classList.remove('hidden');
+      }
+
+      if (selectedTicker) {
+        renderCompanyDetailView(selectedTicker);
+      }
+    }
+
+    mainPlayPauseBtn.addEventListener('click', () => {
+      if (!currentTrack) {
+        if (rawCatalog.length > 0) {
+          handlePlayItem(rawCatalog[0].filename);
+        }
+        return;
+      }
+      if (audioEl.paused) {
+        audioEl.play();
+      } else {
+        audioEl.pause();
+      }
+    });
+
+    audioEl.addEventListener('play', () => updatePlayerButtonState());
+    audioEl.addEventListener('pause', () => updatePlayerButtonState());
+
+    audioEl.addEventListener('timeupdate', () => {
+      if (!isUserSeeking && audioEl.duration) {
+        timelineSlider.value = (audioEl.currentTime / audioEl.duration) * 100;
+        currentTimeLabel.textContent = formatTime(audioEl.currentTime);
+      }
+    });
+
+    audioEl.addEventListener('durationchange', () => {
+      durationLabel.textContent = formatTime(audioEl.duration);
+    });
+
+    audioEl.addEventListener('ended', () => {
+      timelineSlider.value = 0;
+      currentTimeLabel.textContent = '0:00';
+      updatePlayerButtonState();
+    });
+
+    timelineSlider.addEventListener('input', () => {
+      isUserSeeking = true;
+      if (audioEl.duration) {
+        const target = (timelineSlider.value / 100) * audioEl.duration;
+        currentTimeLabel.textContent = formatTime(target);
+      }
+    });
+
+    timelineSlider.addEventListener('change', () => {
+      if (audioEl.duration) {
+        audioEl.currentTime = (timelineSlider.value / 100) * audioEl.duration;
+      }
+      isUserSeeking = false;
+    });
+
+    skipBackwardBtn.addEventListener('click', () => {
+      audioEl.currentTime = Math.max(0, audioEl.currentTime - 15);
+    });
+
+    skipForwardBtn.addEventListener('click', () => {
+      if (audioEl.duration) {
+        audioEl.currentTime = Math.min(audioEl.duration, audioEl.currentTime + 15);
+      } else {
+        audioEl.currentTime += 15;
+      }
+    });
+
+    playbackSpeedSelect.addEventListener('change', () => {
+      audioEl.playbackRate = parseFloat(playbackSpeedSelect.value);
+    });
+
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      if (!selectedTicker) {
+        renderCompaniesGrid();
+      }
+    });
+
+    document.querySelectorAll('.filter-tag').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeExchange = btn.getAttribute('data-exchange');
+        document.querySelectorAll('.filter-tag').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (!selectedTicker) {
+          renderCompaniesGrid();
+        }
+      });
+    });
+
+    // Iniciar carregando catálogo
+    loadCatalog();
+  </script>
+</body>
+</html>
